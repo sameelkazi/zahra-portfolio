@@ -25,59 +25,96 @@ export default function ScrollyCanvas() {
   const frameIndex = useTransform(scrollYProgress, [0, 1], [0, FRAME_COUNT - 1]);
 
   useEffect(() => {
-    // Preload all images
-    const loadImages = async () => {
+    let isMounted = true;
+
+    const loadImagesProgressively = async () => {
       const loadedImages: HTMLImageElement[] = [];
 
-      for (let i = 0; i < FRAME_COUNT; i++) {
-        const img = new Image();
-        img.src = getFrameUrl(i);
-        await new Promise((resolve) => {
-          img.onload = () => {
-            loadedImages[i] = img;
-            resolve(true);
-          };
-          img.onerror = () => {
-            console.error(`Failed to load image ${i}`);
-            resolve(false);
-          };
-        });
-      }
-      setImages(loadedImages);
+      // 1. Load the very first frame instantly
+      const firstImg = new Image();
+      firstImg.src = getFrameUrl(0);
+      await new Promise((resolve) => {
+        firstImg.onload = () => {
+          loadedImages[0] = firstImg;
+          resolve(true);
+        };
+        firstImg.onerror = () => resolve(false);
+      });
+
+      if (!isMounted) return;
+
+      // Mark loaded = true immediately after Frame 0 is ready!
+      setImages([...loadedImages]);
       setLoaded(true);
+
+      // 2. Concurrently load remaining frames in small batches in the background
+      const BATCH_SIZE = 20;
+      for (let i = 1; i < FRAME_COUNT; i += BATCH_SIZE) {
+        const batchPromises = [];
+        for (let j = i; j < Math.min(i + BATCH_SIZE, FRAME_COUNT); j++) {
+          batchPromises.push(
+            new Promise<void>((resolve) => {
+              const img = new Image();
+              img.src = getFrameUrl(j);
+              img.onload = () => {
+                if (isMounted) loadedImages[j] = img;
+                resolve();
+              };
+              img.onerror = () => resolve();
+            })
+          );
+        }
+        await Promise.all(batchPromises);
+        if (!isMounted) return;
+        setImages([...loadedImages]);
+      }
     };
 
-    loadImages();
+    loadImagesProgressively();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const renderFrame = (index: number) => {
-    if (!images[index] || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const img = images[index];
+    // Find closest loaded image at or before requested index
+    let targetImg = images[index];
+    if (!targetImg) {
+      for (let i = index; i >= 0; i--) {
+        if (images[i]) {
+          targetImg = images[i];
+          break;
+        }
+      }
+    }
+    if (!targetImg) return;
 
-    // Set canvas dimensions to match window (handle high DPI if needed, but keeping it simple)
+    // Set canvas dimensions to match window
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     // Object-fit: cover logic
-    const ratio = Math.max(canvas.width / img.width, canvas.height / img.height);
-    const centerX = (canvas.width - img.width * ratio) / 2;
-    const centerY = (canvas.height - img.height * ratio) / 2;
+    const ratio = Math.max(canvas.width / targetImg.width, canvas.height / targetImg.height);
+    const centerX = (canvas.width - targetImg.width * ratio) / 2;
+    const centerY = (canvas.height - targetImg.height * ratio) / 2;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(
-      img,
+      targetImg,
       0,
       0,
-      img.width,
-      img.height,
+      targetImg.width,
+      targetImg.height,
       centerX,
       centerY,
-      img.width * ratio,
-      img.height * ratio
+      targetImg.width * ratio,
+      targetImg.height * ratio
     );
   };
 
