@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useScroll, useTransform, motion, useMotionValueEvent } from "framer-motion";
+import { useScroll, useTransform, useMotionValueEvent } from "framer-motion";
 import Overlay from "./Overlay";
 
 const FRAME_COUNT = 120; // 0 to 119
@@ -28,14 +28,12 @@ export default function ScrollyCanvas() {
     // Preload all images
     const loadImages = async () => {
       const loadedImages: HTMLImageElement[] = [];
-      let loadedCount = 0;
 
       for (let i = 0; i < FRAME_COUNT; i++) {
         const img = new Image();
         img.src = getFrameUrl(i);
         await new Promise((resolve) => {
           img.onload = () => {
-            loadedCount++;
             loadedImages[i] = img;
             resolve(true);
           };

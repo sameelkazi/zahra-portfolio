@@ -16,9 +16,9 @@ export default function Footer() {
         
         {/* Contact Info */}
         <div>
-          <h3 className="text-4xl font-bold tracking-tight mb-8">Let's Connect</h3>
+          <h3 className="text-4xl font-bold tracking-tight mb-8">Let&apos;s Connect</h3>
           <p className="text-white/60 mb-8 max-w-sm">
-            I'm currently seeking hands-on internship opportunities in social media marketing, communications, and media operations.
+            I&apos;m currently seeking hands-on internship opportunities in social media marketing, communications, and media operations.
           </p>
           <div className="space-y-4">
             <a href="mailto:sysayedzahra@gmail.com" className="flex items-center gap-4 text-white/80 hover:text-white transition-colors">
@@ -54,7 +54,7 @@ export default function Footer() {
           <h3 className="text-2xl font-semibold mb-6">Education</h3>
           <div className="space-y-4 text-white/80">
             <div>
-              <p className="font-medium text-white">St. Xavier's College</p>
+              <p className="font-medium text-white">St. Xavier&apos;s College</p>
               <p className="text-sm">Junior College (HSC) • Commerce • 2025-2026</p>
             </div>
             <div>
